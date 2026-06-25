@@ -247,20 +247,53 @@ echo -e "${GREEN}============================================${NC}"
 echo -e "${GREEN}  部署完成！${NC}"
 echo -e "${GREEN}============================================${NC}"
 echo ""
-echo "服务已注册但未启动。请先手动登录 Telegram："
+echo "服务已注册但未启动。首次使用需要登录 Telegram。"
 echo ""
-echo "  cd ${INSTALL_DIR}"
-echo "  source venv/bin/activate"
-echo "  python main.py"
-echo ""
-echo "按提示输入手机号、验证码，看到 '已登录 Telegram' 后 Ctrl+C 退出。"
-echo "然后启动服务："
-echo ""
-echo "  sudo systemctl start ${APP_NAME}"
-echo "  tail -f ${LOG_DIR}/app.log"
+
+read -p "现在登录 Telegram 吗？[Y/n] " -n 1 -r
+echo
+if [[ $REPLY =~ ^[Nn]$ ]]; then
+    echo ""
+    echo "稍后可手动登录："
+    echo "  cd ${INSTALL_DIR}"
+    echo "  source venv/bin/activate"
+    echo "  python main.py"
+    echo "  sudo systemctl start ${APP_NAME}"
+else
+    echo ""
+    echo -e "${YELLOW}============================================${NC}"
+    echo -e "${YELLOW}  Telegram 登录${NC}"
+    echo -e "${YELLOW}============================================${NC}"
+    echo "  1. 输入手机号（格式: +8613800138000）"
+    echo "  2. 输入收到的验证码"
+    echo "  3. 如果开启二步验证，输入二步验证密码"
+    echo "  4. 看到 '已登录 Telegram' 后自动继续"
+    echo ""
+
+    cd "${INSTALL_DIR}"
+    source "${VENV_DIR}/bin/activate"
+    python main.py
+    echo ""
+
+    read -p "是否立即启动服务？[Y/n] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        sudo systemctl start "${APP_NAME}"
+        log "服务已启动"
+        echo ""
+        log "实时日志（Ctrl+C 退出）："
+        echo "---"
+        tail -f "${LOG_DIR}/app.log"
+    else
+        echo ""
+        echo "稍后启动: sudo systemctl start ${APP_NAME}"
+    fi
+fi
+
 echo ""
 echo "常用命令："
 echo "  状态    sudo systemctl status ${APP_NAME}"
 echo "  启动    sudo systemctl start ${APP_NAME}"
 echo "  停止    sudo systemctl stop ${APP_NAME}"
 echo "  重启    sudo systemctl restart ${APP_NAME}"
+echo "  日志    tail -f ${LOG_DIR}/app.log"

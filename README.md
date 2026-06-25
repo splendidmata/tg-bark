@@ -1,4 +1,4 @@
-# Telegram → Bark / Server酱³ 通知系统 README
+﻿# Telegram → Bark / Server酱³ 通知系统 README
 
 基于：
 
@@ -30,13 +30,13 @@
 项目目录：
 
 ```bash
-~/tg-bark
+/opt/tg-bark
 ```
 
 主要文件：
 
 ```text
-~/tg-bark
+/opt/tg-bark
 ├── main.py
 ├── .env
 ├── .env.example
@@ -139,8 +139,8 @@ state.json
 ## 1. 创建目录
 
 ```bash
-mkdir -p ~/tg-bark
-cd ~/tg-bark
+mkdir -p /opt/tg-bark
+cd /opt/tg-bark
 ```
 
 ---
@@ -319,7 +319,7 @@ ESC
 进入目录：
 
 ```bash
-cd ~/tg-bark
+cd /opt/tg-bark
 ```
 
 激活环境：
@@ -393,8 +393,8 @@ After=network.target
 [Service]
 Type=simple
 User=ubuntu
-WorkingDirectory=/home/ubuntu/tg-bark
-ExecStart=/home/ubuntu/tg-bark/venv/bin/python /home/ubuntu/tg-bark/main.py
+WorkingDirectory=//opt/tg-bark
+ExecStart=//opt/tg-bark/venv/bin/python //opt/tg-bark/main.py
 Restart=always
 RestartSec=5
 
@@ -584,7 +584,7 @@ BARK_KEY
 进入目录：
 
 ```bash
-cd ~/tg-bark
+cd /opt/tg-bark
 source venv/bin/activate
 ```
 
@@ -615,7 +615,7 @@ sudo systemctl daemon-reload
 删除项目：
 
 ```bash
-rm -rf ~/tg-bark
+rm -rf /opt/tg-bark
 ```
 
 ---

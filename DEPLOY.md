@@ -1,4 +1,4 @@
-# tg-bark 部署教程
+﻿# tg-bark 部署教程
 
 ## 环境要求
 
@@ -35,8 +35,8 @@ iPhone 安装 Bark App，打开后获得 Key。
 **方式一：从 GitHub 克隆（推荐，服务器上直接执行）**
 
 ```bash
-git clone https://github.com/splendidmata/tg-bark.git ~/tg-bark
-cd ~/tg-bark
+git clone https://github.com/splendidmata/tg-bark.git /opt/tg-bark
+cd /opt/tg-bark
 ```
 
 **方式二：手动上传**
@@ -53,19 +53,21 @@ scp ../tg-bark.tar.gz ubuntu@你的服务器IP:~/
 在服务器上解压：
 
 ```bash
-mkdir -p ~/tg-bark
-tar -xzf ~/tg-bark.tar.gz -C ~/tg-bark
-cd ~/tg-bark
+mkdir -p /opt/tg-bark
+tar -xzf ~/tg-bark.tar.gz -C /opt/tg-bark
+cd /opt/tg-bark
 ```
 
 ---
 
-## 3. 一键部署
+## 3. 一键部署（需要 root 权限）
 
 ```bash
 chmod +x deploy.sh
-./deploy.sh
+sudo ./deploy.sh
 ```
+
+> 因为安装到 `/opt` 和配置 systemd 需要 root 权限。脚本会自动将文件归属为你的用户，服务以你的用户运行。
 
 脚本会逐项询问配置，回车跳过使用默认值。执行流程：
 
@@ -108,22 +110,20 @@ MAX_BODY_LEN（推送消息最大字数）[500]: （回车）
 
 ## 4. 首次登录 Telegram
 
-服务启动后，首次需要输入手机号验证码：
+部署脚本会自动引导你完成登录：输入手机号、验证码、二步验证密码（如果有）。
+
+如果自动登录未触发，可手动执行：
 
 ```bash
-# 先停止服务
 sudo systemctl stop tg-bark
-
-# 手动运行一次完成登录
-cd ~/tg-bark
+cd /opt/tg-bark
 source venv/bin/activate
 python main.py
 ```
 
-按提示输入手机号、验证码、二步验证密码（如果有），看到 "已登录 Telegram" 后 `Ctrl+C` 退出。
+按提示完成登录，看到 "已登录 Telegram" 后 `Ctrl+C` 退出，然后：
 
 ```bash
-# 重新启动服务
 sudo systemctl start tg-bark
 ```
 
@@ -173,7 +173,7 @@ sudo systemctl start tg-bark
 ## 升级
 
 ```bash
-cd ~/tg-bark
+cd /opt/tg-bark
 source venv/bin/activate
 pip install -r requirements.txt --upgrade
 sudo systemctl restart tg-bark
@@ -189,7 +189,7 @@ sudo systemctl disable tg-bark
 sudo rm /etc/systemd/system/tg-bark.service
 sudo rm /etc/logrotate.d/tg-bark
 sudo systemctl daemon-reload
-rm -rf ~/tg-bark
+rm -rf /opt/tg-bark
 sudo rm -rf /var/log/tg-bark
 ```
 
@@ -198,8 +198,8 @@ sudo rm -rf /var/log/tg-bark
 ## 安全建议
 
 ```bash
-chmod 600 ~/tg-bark/.env
-chmod 600 ~/tg-bark/*.session
+chmod 600 /opt/tg-bark/.env
+chmod 600 /opt/tg-bark/*.session
 ```
 
 以下内容绝对不要泄露：

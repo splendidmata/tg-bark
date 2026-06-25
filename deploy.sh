@@ -3,7 +3,7 @@ set -e
 
 # ============================================================
 # tg-bark 一键部署脚本
-# 用法：chmod +x deploy.sh && ./deploy.sh
+# 用法：sudo ./deploy.sh（需要 root 权限写入 /opt 和配置 systemd）
 # ============================================================
 
 RED='\033[0;31m'
@@ -18,12 +18,21 @@ err()  { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 # -------------------- 配置 --------------------
 APP_NAME="tg-bark"
 GIT_REPO="https://github.com/splendidmata/tg-bark.git"
-INSTALL_DIR="${HOME}/${APP_NAME}"
+INSTALL_DIR="/opt/${APP_NAME}"
 VENV_DIR="${INSTALL_DIR}/venv"
 SERVICE_FILE="/etc/systemd/system/${APP_NAME}.service"
 LOGROTATE_FILE="/etc/logrotate.d/${APP_NAME}"
 PYTHON_BIN="${VENV_DIR}/bin/python"
 LOG_DIR="/var/log/${APP_NAME}"
+
+# 检查 root 权限，同时保留真实用户（非 root）用于服务
+if [ "$EUID" -ne 0 ]; then
+    err "请用 sudo 运行: sudo ./deploy.sh"
+fi
+REAL_USER="${SUDO_USER:-$USER}"
+if [ "$REAL_USER" = "root" ]; then
+    warn "未检测到 sudo 用户，服务将以 root 运行（不推荐）"
+fi
 
 # -------------------- 1. 环境检查 --------------------
 log "检查 Python ..."
@@ -50,6 +59,9 @@ else
     fi
 fi
 
+# 确保安装目录归属真实用户
+chown -R "${REAL_USER}:${REAL_USER}" "${INSTALL_DIR}"
+
 # -------------------- 3. 虚拟环境 --------------------
 log "创建虚拟环境 ..."
 python3 -m venv "${VENV_DIR}"
@@ -57,6 +69,9 @@ python3 -m venv "${VENV_DIR}"
 log "安装依赖 ..."
 "${PYTHON_BIN}" -m pip install --upgrade pip -q
 "${PYTHON_BIN}" -m pip install -r "${INSTALL_DIR}/requirements.txt" -q
+
+# venv 目录归属真实用户
+chown -R "${REAL_USER}:${REAL_USER}" "${VENV_DIR}"
 
 # -------------------- 4. 交互式配置 --------------------
 echo ""
@@ -172,7 +187,7 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=${USER}
+User=${REAL_USER}
 WorkingDirectory=${INSTALL_DIR}
 ExecStart=${PYTHON_BIN} ${INSTALL_DIR}/main.py
 Restart=always
@@ -194,7 +209,7 @@ EOF
 
 # -------------------- 7. 日志目录 --------------------
 sudo mkdir -p "${LOG_DIR}"
-sudo chown "${USER}:${USER}" "${LOG_DIR}"
+sudo chown "${REAL_USER}:${REAL_USER}" "${LOG_DIR}"
 log "日志目录: ${LOG_DIR}"
 
 # -------------------- 8. 日志轮转 --------------------

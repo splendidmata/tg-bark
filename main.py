@@ -41,6 +41,10 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
+# 显式创建事件循环，确保 Telethon 绑定正确的 loop（修复 Python 3.9 兼容性）
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
+
 client = TelegramClient(TG_SESSION, TG_API_ID, TG_API_HASH)
 
 
@@ -440,9 +444,8 @@ async def main():
 
 
 if __name__ == "__main__":
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    _loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(main())
+        _loop.run_until_complete(main())
     finally:
-        loop.close()
+        _loop.close()

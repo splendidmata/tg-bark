@@ -77,7 +77,7 @@ sudo ./deploy.sh
 4. 保护敏感文件权限
 5. 创建 systemd 服务（含安全加固）
 6. 配置日志轮转（每天轮转，保留 7 天）
-7. 启用开机自启并启动服务
+7. 注册 systemd 服务并启用开机自启（不自动启动）
 
 ### 交互式配置流程
 
@@ -110,22 +110,24 @@ MAX_BODY_LEN（推送消息最大字数）[500]: （回车）
 
 ## 4. 首次登录 Telegram
 
-部署脚本会自动引导你完成登录：输入手机号、验证码、二步验证密码（如果有）。
-
-如果自动登录未触发，可手动执行：
+部署完成后服务**不会自动启动**。先手动登录一次：
 
 ```bash
-sudo systemctl stop tg-bark
 cd /opt/tg-bark
 source venv/bin/activate
 python main.py
 ```
 
-按提示完成登录，看到 "已登录 Telegram" 后 `Ctrl+C` 退出，然后：
+按提示输入手机号、验证码、二步验证密码（如果有）。看到 "已登录 Telegram" 后 `Ctrl+C` 退出。
+
+然后启动服务：
 
 ```bash
 sudo systemctl start tg-bark
+tail -f /var/log/tg-bark/app.log
 ```
+
+> 以后重启或重装只需重新启动服务，无需再次登录（session 文件会自动复用）。
 
 ---
 

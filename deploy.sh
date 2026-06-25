@@ -235,90 +235,32 @@ ${LOG_DIR}/*.log {
 }
 EOF
 
-# -------------------- 9. 首次登录（处理二步验证） --------------------
+# -------------------- 9. 系统服务（仅注册，不启动） --------------------
 log "重载 systemd ..."
 sudo systemctl daemon-reload
 
-log "启用开机自启 ..."
+log "注册系统服务并启用开机自启 ..."
 sudo systemctl enable "${APP_NAME}"
 
-SESSION_FILE="${INSTALL_DIR}/${TG_SESSION}.session"
-
-if [ -f "${SESSION_FILE}" ]; then
-    log "已找到 session 文件，跳过登录"
-else
-    echo ""
-    echo -e "${YELLOW}============================================${NC}"
-    echo -e "${YELLOW}  需要首次登录 Telegram${NC}"
-    echo -e "${YELLOW}============================================${NC}"
-    echo ""
-    echo "接下来会交互式运行 main.py 完成登录："
-    echo "  1. 输入手机号（格式: +8613800138000）"
-    echo "  2. 输入收到的验证码"
-    echo "  3. 如果开启二步验证，输入二步验证密码"
-    echo "  4. 看到 '已登录 Telegram' 后按 Ctrl+C 退出"
-    echo ""
-    read -p "按回车开始登录..." -r
-
-    cd "${INSTALL_DIR}"
-    source "${VENV_DIR}/bin/activate"
-    python main.py &
-    MAIN_PID=$!
-
-    # 等待登录完成或超时（最长 120 秒）
-    WAITED=0
-    while [ $WAITED -lt 120 ]; do
-        sleep 1
-        WAITED=$((WAITED + 1))
-
-        # 检查日志中是否出现登录成功
-        if journalctl -u "${APP_NAME}" -n 5 2>/dev/null | grep -q "已登录 Telegram" 2>/dev/null; then
-            :
-        fi
-
-        # 检查 session 文件是否生成
-        if [ -f "${SESSION_FILE}" ]; then
-            log "检测到 session 文件已生成，登录完成"
-            sleep 1
-            kill "${MAIN_PID}" 2>/dev/null || true
-            wait "${MAIN_PID}" 2>/dev/null || true
-            break
-        fi
-
-        if [ $((WAITED % 30)) -eq 0 ]; then
-            echo "  等待中... (${WAITED}s，请完成登录)"
-        fi
-    done
-
-    if [ ! -f "${SESSION_FILE}" ]; then
-        kill "${MAIN_PID}" 2>/dev/null || true
-        err "登录超时（120s），未检测到 session 文件。请确认凭证正确后重新运行脚本"
-    fi
-
-    echo ""
-    log "登录成功！"
-fi
-
-# -------------------- 10. 启动服务 --------------------
-log "启动服务 ..."
-sudo systemctl start "${APP_NAME}"
-
-sleep 2
-
-# -------------------- 11. 检查状态 --------------------
-if sudo systemctl is-active --quiet "${APP_NAME}"; then
-    log "部署成功！"
-    echo ""
-    echo "  ┌─────────────────────────────────────────┐"
-    echo "  │  状态        sudo systemctl status ${APP_NAME}"
-    echo "  │  日志        tail -f ${LOG_DIR}/app.log"
-    echo "  │  重启        sudo systemctl restart ${APP_NAME}"
-    echo "  │  配置文件    ${INSTALL_DIR}/.env"
-    echo "  └─────────────────────────────────────────┘"
-    echo ""
-    log "当前日志："
-    echo "---"
-    tail -20 "${LOG_DIR}/app.log" 2>/dev/null || echo "(暂无日志)"
-else
-    err "服务启动失败，查看日志: sudo journalctl -u ${APP_NAME} -n 30"
-fi
+echo ""
+echo -e "${GREEN}============================================${NC}"
+echo -e "${GREEN}  部署完成！${NC}"
+echo -e "${GREEN}============================================${NC}"
+echo ""
+echo "服务已注册但未启动。请先手动登录 Telegram："
+echo ""
+echo "  cd ${INSTALL_DIR}"
+echo "  source venv/bin/activate"
+echo "  python main.py"
+echo ""
+echo "按提示输入手机号、验证码，看到 '已登录 Telegram' 后 Ctrl+C 退出。"
+echo "然后启动服务："
+echo ""
+echo "  sudo systemctl start ${APP_NAME}"
+echo "  tail -f ${LOG_DIR}/app.log"
+echo ""
+echo "常用命令："
+echo "  状态    sudo systemctl status ${APP_NAME}"
+echo "  启动    sudo systemctl start ${APP_NAME}"
+echo "  停止    sudo systemctl stop ${APP_NAME}"
+echo "  重启    sudo systemctl restart ${APP_NAME}"

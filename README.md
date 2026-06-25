@@ -1,18 +1,20 @@
-# Telegram → Bark 通知系统 README
+# Telegram → Bark / Server酱³ 通知系统 README
 
 基于：
 
 * Python
 * Telethon
-* Bark
+* Bark（iOS 推送）
+* Server酱³（Android/iOS 推送）
 
 实现：
 
 * Telegram 私聊通知
 * Telegram @你 通知
 * Telegram 回复你 通知
-* 通过 Bark 推送到 iPhone
-* Telegram 收藏夹远程控制开关
+* 通过 Bark / Server酱³ 双通道推送到手机
+* 通知显示真实消息内容
+* Telegram 收藏夹远程分别控制两个通道开关
 * 点击通知直接打开 Telegram
 
 适用于：
@@ -37,6 +39,8 @@
 ~/tg-bark
 ├── main.py
 ├── .env
+├── .env.example
+├── requirements.txt
 ├── state.json
 ├── tg_bark.session
 ├── venv/
@@ -81,7 +85,9 @@ Telegram 收藏夹 / Saved Messages
 ### 开启推送
 
 ```text
-/on
+/on          — 开启全部通道
+/on bark     — 仅开启 Bark
+/on sc3      — 仅开启 Server酱³
 ```
 
 ---
@@ -89,7 +95,9 @@ Telegram 收藏夹 / Saved Messages
 ### 关闭推送
 
 ```text
-/off
+/off         — 关闭全部通道
+/off bark    — 仅关闭 Bark
+/off sc3     — 仅关闭 Server酱³
 ```
 
 ---
@@ -114,6 +122,7 @@ Telegram 收藏夹 / Saved Messages
 
 * 不需要登录 VPS
 * 手机即可控制
+* 两个通道可分别开关
 * 状态永久保存
 * VPS 重启后依然生效
 
@@ -161,7 +170,7 @@ source venv/bin/activate
 ## 3. 安装依赖
 
 ```bash
-pip install -U telethon aiohttp python-dotenv
+pip install -r requirements.txt
 ```
 
 ---
@@ -221,7 +230,25 @@ BARK_KEY
 
 ---
 
-# 七、配置 .env
+# 七、获取 Server酱³ SendKey
+
+打开：
+
+```text
+https://sc3.ft07.com/
+```
+
+登录后进入 SendKey 页面，复制 `SendKey`。
+
+格式类似：
+
+```text
+sctp123456t...
+```
+
+---
+
+# 八、配置 .env
 
 创建：
 
@@ -244,17 +271,22 @@ TG_API_ID=你的api_id
 TG_API_HASH=你的api_hash
 TG_SESSION=tg_bark
 
+BARK_ENABLED=true
 BARK_KEY=你的Bark_Key
 BARK_SERVER=https://api.day.app
+BARK_ICON=https://cdn.nodeimage.com/i/zjy7G6Nv4ENdd927CAN8D0AY5WXDG2iw.webp
+
+SC3_ENABLED=true
+SC3_SENDKEY=你的Server酱3_SendKey
 
 MY_USERNAME=你的Telegram用户名
 ```
 
-注意：
+说明：
 
-```text
-MY_USERNAME 不要带 @
-```
+* `BARK_KEY` / `SC3_SENDKEY` — 至少填一个，可同时填
+* `BARK_ENABLED` / `SC3_ENABLED` — 部署层总开关，设为 `false` 则该通道完全不工作
+* `MY_USERNAME` 不要带 `@`
 
 例如：
 
@@ -282,7 +314,7 @@ ESC
 
 ---
 
-# 八、首次运行
+# 九、首次运行
 
 进入目录：
 

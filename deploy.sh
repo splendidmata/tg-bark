@@ -46,9 +46,11 @@ python3 -m pip --version >/dev/null 2>&1 || err "未安装 pip，请先 apt inst
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 if [ -f "${SCRIPT_DIR}/main.py" ] && [ -f "${SCRIPT_DIR}/requirements.txt" ]; then
     log "从 ${SCRIPT_DIR} 同步项目文件 ..."
-    rsync -a --exclude='venv' --exclude='__pycache__' --exclude='.env' \
-          --exclude='state.json' --exclude='*.session' --exclude='.git' \
-          "${SCRIPT_DIR}/" "${INSTALL_DIR}/"
+    mkdir -p "${INSTALL_DIR}"
+    cp -r "${SCRIPT_DIR}"/* "${INSTALL_DIR}/"
+    rm -rf "${INSTALL_DIR}/venv" "${INSTALL_DIR}/__pycache__" "${INSTALL_DIR}/.git"
+    rm -f "${INSTALL_DIR}/.env" "${INSTALL_DIR}/state.json" 2>/dev/null
+    rm -f "${INSTALL_DIR}"/*.session 2>/dev/null
 else
     log "从 GitHub 克隆项目 ..."
     if [ -d "${INSTALL_DIR}/.git" ]; then

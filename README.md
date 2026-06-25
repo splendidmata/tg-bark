@@ -19,8 +19,7 @@
 
 适用于：
 
-* Oracle Cloud ARM VPS
-* Ubuntu 22.04
+* 任何支持 systemd 的 Linux（Ubuntu / Debian / CentOS / Fedora / Arch 等）
 * 长期后台运行
 
 ---

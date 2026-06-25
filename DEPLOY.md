@@ -2,7 +2,7 @@
 
 ## 环境要求
 
-- Ubuntu 22.04 / 20.04（或其他 Linux）
+- Ubuntu 22.04 / 20.04 / Debian 11+ / CentOS 7+ / Rocky / Fedora / Arch / Alpine （或其他支持 systemd 的 Linux）
 - Python 3.9+
 - 一个 Telegram 账号
 

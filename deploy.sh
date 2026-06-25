@@ -15,6 +15,59 @@ log()  { echo -e "${GREEN}[INFO]${NC}  $*"; }
 warn() { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 err()  { echo -e "${RED}[ERROR]${NC} $*"; exit 1; }
 
+# -------------------- 检测发行版 --------------------
+detect_distro() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        DISTRO_ID="${ID}"
+        DISTRO_LIKE="${ID_LIKE:-}"
+    elif [ -f /etc/redhat-release ]; then
+        DISTRO_ID="rhel"
+    else
+        DISTRO_ID="unknown"
+    fi
+
+    case "${DISTRO_ID}" in
+        ubuntu|debian|linuxmint|raspbian)
+            PKG_MGR="apt"
+            PKG_INSTALL="apt install -y"
+            VENV_PKG="python3-venv"
+            ;;
+        centos|rhel|fedora|rocky|almalinux|amzn)
+            PKG_MGR="dnf"
+            PKG_INSTALL="dnf install -y"
+            VENV_PKG="python3"
+            ;;
+        arch|manjaro)
+            PKG_MGR="pacman"
+            PKG_INSTALL="pacman -S --noconfirm"
+            VENV_PKG="python"
+            ;;
+        alpine)
+            PKG_MGR="apk"
+            PKG_INSTALL="apk add"
+            VENV_PKG="python3"
+            ;;
+        opensuse*|sles)
+            PKG_MGR="zypper"
+            PKG_INSTALL="zypper install -y"
+            VENV_PKG="python3"
+            ;;
+        *)
+            # 对于 Debian/Ubuntu 衍生版回退 apt
+            case "${DISTRO_LIKE}" in
+                *debian*) PKG_MGR="apt"; PKG_INSTALL="apt install -y"; VENV_PKG="python3-venv" ;;
+                *rhel*|*fedora*) PKG_MGR="dnf"; PKG_INSTALL="dnf install -y"; VENV_PKG="python3" ;;
+                *) PKG_MGR="unknown"; VENV_PKG="python3" ;;
+            esac
+            ;;
+    esac
+
+    log "检测到系统: ${DISTRO_ID:-unknown} (包管理器: ${PKG_MGR:-unknown})"
+}
+
+detect_distro
+
 # -------------------- 配置 --------------------
 APP_NAME="tg-bark"
 GIT_REPO="https://github.com/splendidmata/tg-bark.git"
@@ -35,11 +88,21 @@ if [ "$REAL_USER" = "root" ]; then
 fi
 
 # -------------------- 1. 环境检查 --------------------
-log "检查 Python ..."
-python3 --version >/dev/null 2>&1 || err "未安装 python3，请先 apt install python3 python3-venv"
+log "检查基础工具 ..."
+for cmd in python3 git; do
+    if ! command -v "$cmd" &>/dev/null; then
+        err "缺少 ${cmd}，请先安装: ${PKG_INSTALL} ${cmd}"
+    fi
+done
+
+log "检查 Python3 ..."
+python3 --version >/dev/null 2>&1 || err "请先安装 Python3: ${PKG_INSTALL} python3"
+
+log "检查 venv 模块 ..."
+python3 -c "import venv" 2>/dev/null || err "缺少 venv 模块，请安装: ${PKG_INSTALL} ${VENV_PKG}"
 
 log "检查 pip ..."
-python3 -m pip --version >/dev/null 2>&1 || err "未安装 pip，请先 apt install python3-pip"
+python3 -m pip --version >/dev/null 2>&1 || err "请先安装 pip: python3 -m ensurepip"
 
 # -------------------- 2. 获取代码 --------------------
 # 如果当前目录就是项目源码目录，用 cp 同步；否则从 GitHub 克隆

@@ -1,6 +1,8 @@
 import os
 import re
 import json
+import sys
+import signal
 import asyncio
 import logging
 from typing import Optional
@@ -444,8 +446,44 @@ async def main():
 
 
 if __name__ == "__main__":
-    _loop = asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()
+
+    # 让 systemd stop / Ctrl+C 正常退出，避免 Event loop is closed 错误
+    async def _shutdown():
+        logging.info("正在关闭连接...")
+        await client.disconnect()
+        loop.stop()
+
+    def _on_stop():
+        asyncio.ensure_future(_shutdown())
+
     try:
-        _loop.run_until_complete(main())
+        loop.add_signal_handler(signal.SIGINT, _on_stop)
+        loop.add_signal_handler(signal.SIGTERM, _on_stop)
+    except NotImplementedError:
+        # Windows 不支持 add_signal_handler，忽略
+        pass
+
+    # 检查 session 是否存在（首次使用需要手动登录）
+    session_file = f"{TG_SESSION}.session"
+    if not os.path.exists(session_file):
+        tty = sys.stdin.isatty()
+        if not tty:
+            logging.error(
+                "未找到 session 文件 %s，请在终端手动运行一次完成登录: "
+                "cd %s && source venv/bin/activate && python main.py",
+                session_file,
+                os.path.dirname(os.path.abspath(__file__)),
+            )
+            sys.exit(1)
+
+    try:
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        pass
     finally:
-        _loop.close()
+        # 让 Telethon 的 pending task 自然结束，不强制 close
+        pending = asyncio.all_tasks(loop)
+        if pending:
+            loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+        loop.close()
